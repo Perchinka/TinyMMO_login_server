@@ -3,6 +3,11 @@ from login_server.crypto.crypto_utils import CryptoUtils
 def test_register_new_user_returns_true(user_service):
     assert user_service.register("alice", "password") is True
 
+def test_register_stores_hashed_password(user_sql_repo, user_service):
+    user_service.register("gwen", "topsecret")
+    assert user_sql_repo.get_password_hash("gwen") != "topsecret"
+    assert len(user_sql_repo.get_password_hash("gwen")) == 64
+
 def test_register_duplicate_user_returns_false(user_service):
     user_service.register("bob", "password")
     assert user_service.register("bob", "password") is False
