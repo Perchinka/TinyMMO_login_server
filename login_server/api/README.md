@@ -1,4 +1,6 @@
-HTTP interface layer:
+HTTP interface layer.  
+Translates external requests into service calls and handles error mapping.
 
-- `controllers.py`: Translates requests into service calls and handles errors.  
-- `routes.py`: Defines and registers API endpoints.
+**Key elements:**
+- `controllers.py`: Request handlers that call into `UserService`.
+- `routes.py`: Maps URLs to controller functions.

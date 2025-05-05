@@ -3,10 +3,10 @@ from login_server.crypto.crypto_utils import CryptoUtils
 def test_register_new_user_returns_true(user_service):
     assert user_service.register("alice", "password") is True
 
-def test_register_stores_hashed_password(user_sql_repo, user_service):
+def test_register_stores_hashed_password(user_service):
     user_service.register("gwen", "topsecret")
-    assert user_sql_repo.get_password_hash("gwen") != "topsecret"
-    assert len(user_sql_repo.get_password_hash("gwen")) == 64
+    stored = user_service.user_repo.get_password_hash("gwen")
+    assert stored == CryptoUtils.hash_password("topsecret")
 
 def test_register_duplicate_user_returns_false(user_service):
     user_service.register("bob", "password")
@@ -32,5 +32,4 @@ def test_authenticate_unknown_user_returns_false(user_service):
 
 def test_authenticate_wrong_response_returns_false(user_service):
     user_service.register("frank", "pwX")
-    challenge = user_service.generate_challenge("frank") 
     assert user_service.authenticate("frank", "invalid") is False

@@ -1,46 +1,37 @@
-import psycopg2
 from contextlib import AbstractContextManager
+from typing import Any
 
 from login_server.domain.repositories import UserRepository
 from .repositories.user_sql_repository import UserSQLRepository
 
+from login_server.domain.adapters import SQLAdapter
+
 class UnitOfWork(AbstractContextManager["UnitOfWork"]):
     """
-    Manages a psycopg2 transaction and exposes a `users` repository bound to it.
-
-    Usage:
-        with UnitOfWork(db_url) as uow:
-            svc = UserService(uow.users, ...)
+    Manages a SQLAdapter‐provided connection in a transaction,
+    exposes `.users` as a UserRepository.
     """
-    conn: psycopg2.extensions.connection
+
+    conn: Any
     users: UserRepository
 
-    def __init__(self, db_url: str):
-        self.db_url = db_url
+    def __init__(self, adapter: SQLAdapter):
+        self.adapter = adapter
 
     def __enter__(self) -> "UnitOfWork":
-        self.conn = psycopg2.connect(self.db_url)
-        self.conn.autocommit = False
+        self.conn = self.adapter.connect()
+        self.adapter.ensure_schema(self.conn)
 
-        # Ensure table exists
-        with self.conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    username VARCHAR PRIMARY KEY,
-                    password_hash VARCHAR NOT NULL
-                );
-            """)
-
-        # Bind repository implementation
         self.users = UserSQLRepository(self.conn)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        # commit or rollback, then close
         if exc_type:
             self.conn.rollback()
         else:
             self.conn.commit()
         self.conn.close()
 
-        # Returning False propagates exceptions, True silences them
+        # returning False re-raises any exception
         return False

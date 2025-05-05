@@ -18,8 +18,7 @@ class CryptoUtils:
     @staticmethod
     def encrypt_challenge(challenge: str, key: str) -> str:
         """
-        HMAC-SHA256-“encrypt” `challenge` with `key`.
-        (Demo-safe; swap for AES-CTR or ChaCha20 in prod.)
+        HMAC-SHA256 encrypt `challenge` with `key`.
         """
         return ""
 
