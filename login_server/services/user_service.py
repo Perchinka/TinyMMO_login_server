@@ -20,7 +20,7 @@ class UserService:
 
     def register(self, username: str, password: str) -> bool:
         if not self.user_repo.is_available(username):
-            logging.warn(f"Registration failed: '{username}' taken.")
+            logging.warning(f"Registration failed: '{username}' taken.")
             return False
         pwd_hash = self.crypto.hash_password(password)
         self.user_repo.add(username, pwd_hash)
