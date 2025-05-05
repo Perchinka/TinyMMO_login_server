@@ -7,10 +7,16 @@ class RegisterRequest(BaseModel):
 class RegisterResponse(BaseModel):
     success: bool
 
-class LoginRequest(BaseModel):
+class ChallengeRequest(BaseModel):
     username: str
-    client_response: str
 
-class LoginResponse(BaseModel):
+class ChallengeResponse(BaseModel):
+    challenge: str
+
+class AuthRequest(BaseModel):
+    username: str
+    encrypted_challenge: str
+
+class AuthResponse(BaseModel):
     success: bool
 

@@ -1,9 +1,3 @@
-"""
-auth/crypto_utils.py
-
-Hashing and challenge‐encryption utilities.
-"""
-
 class CryptoUtils:
     """
     Provides static methods for password hashing and challenge encryption.

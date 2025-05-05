@@ -26,7 +26,3 @@ class Config:
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
-    class Config:
-        env_file = ".env"
-        env_prefix = ""
-

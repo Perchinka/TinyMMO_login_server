@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 
 from login_server.api.schemas import (
-    RegisterRequest, RegisterResponse,
-    LoginRequest,     LoginResponse
+    ChallengeRequest,
+    ChallengeResponse,
+    AuthRequest,
+    AuthResponse,
+    RegisterRequest,
+    RegisterResponse
 )
 from login_server.services.user_service import UserService
 from login_server.infra.unit_of_work import UnitOfWork
@@ -18,13 +22,14 @@ router = APIRouter(tags=["auth"])
 def register(
     req: RegisterRequest,
     adapter      = Depends(get_adapter),
-    challenge_mgr= Depends(get_challenge_mgr),
+    challenge_manager= Depends(get_challenge_mgr),
     crypto_utils = Depends(get_crypto_utils),
 ):
+    success: bool = False
     with UnitOfWork(adapter) as uow:
-        svc = UserService(uow.users, challenge_mgr, crypto_utils)
-        ok = svc.register(req.username, req.password)
-    if not ok:
+        service = UserService(uow.users, challenge_manager, crypto_utils)
+        success = service.register(req.username, req.password)
+    if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already taken"
@@ -32,22 +37,45 @@ def register(
     return RegisterResponse(success=True)
 
 @router.post(
-    "/login",
-    response_model=LoginResponse,
+    "/auth/challenge",
+    response_model=ChallengeResponse,
     status_code=status.HTTP_200_OK
 )
-def login(
-    req: LoginRequest,
-    adapter      = Depends(get_adapter),
-    challenge_mgr= Depends(get_challenge_mgr),
-    crypto_utils = Depends(get_crypto_utils),
+def issue_challenge(
+    req: ChallengeRequest,
+    adapter       = Depends(get_adapter),
+    challenge_mgr = Depends(get_challenge_mgr),
+    crypto_utils  = Depends(get_crypto_utils),
 ):
+    challenge = None
     with UnitOfWork(adapter) as uow:
-        svc = UserService(uow.users, challenge_mgr, crypto_utils)
-        ok = svc.authenticate(req.username, req.client_response)
-    if not ok:
+        service = UserService(uow.users, challenge_mgr, crypto_utils)
+        challenge = service.generate_challenge(req.username)
+    if challenge is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return ChallengeResponse(challenge=challenge)
+
+@router.post(
+    "/auth/login",
+    response_model=AuthResponse,
+    status_code=status.HTTP_200_OK
+)
+def verify_response(
+    req: AuthRequest,
+    adapter       = Depends(get_adapter),
+    challenge_mgr = Depends(get_challenge_mgr),
+    crypto_utils  = Depends(get_crypto_utils),
+):
+    success: bool = False
+    with UnitOfWork(adapter) as uow:
+        service = UserService(uow.users, challenge_mgr, crypto_utils)
+        success = service.authenticate(req.username, req.encrypted_challenge)
+    if not success:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials"
+            detail="Invalid or expired challenge response"
         )
-    return LoginResponse(success=True)
+    return AuthResponse(success=True)

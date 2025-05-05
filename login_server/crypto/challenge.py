@@ -1,9 +1,3 @@
-"""
-auth/challenge.py
-
-Manages generation and retrieval of authentication challenges.
-"""
-
 class ChallengeManager:
     """
     Handles nonces.
