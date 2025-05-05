@@ -77,6 +77,7 @@ sequenceDiagram
         Server->>Client: Encrypts and sends client challenge back
     else Mismatch
         Server-->>Client: Authentication failed
+    end
     Client->>Client: Decrypts challenge
     alt Match
         Client-->>Server: Authentication success
