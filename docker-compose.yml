@@ -25,6 +25,8 @@ services:
     command: python -m login_server
     volumes:
       - .:/app
+    ports:
+      - "8000:8000"
 
 volumes:
   db-data:
