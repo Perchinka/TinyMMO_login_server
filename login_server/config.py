@@ -1,7 +1,4 @@
-from pydantic_settings import BaseSettings
-
-
-class Config(BaseSettings):
+class Config:
     """
     Application configuration, loaded from environment variables.
 
