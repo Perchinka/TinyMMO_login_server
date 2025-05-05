@@ -1,3 +1,6 @@
+import os
+
+
 class Config:
     """
     Application configuration, loaded from environment variables.
@@ -13,11 +16,11 @@ class Config:
         DATABASE_URL (str): SQLAlchemy-style database URL.
     """
 
-    DB_HOST: str
-    DB_PORT: int
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_NAME: str
+    DB_HOST: str = os.getenv("DB_HOST", "localhost")
+    DB_PORT: int = int(os.getenv("DB_PORT", "5432"))
+    DB_USER: str = os.getenv("DB_USER", "postgres")
+    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "password")
+    DB_NAME: str = os.getenv("DB_NAME", "postgres")
 
     @property
     def DATABASE_URL(self) -> str:
