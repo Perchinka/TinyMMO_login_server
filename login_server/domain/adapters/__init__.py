@@ -1,3 +1,4 @@
-from .sql_adapter import SQLAdapter
+from .sql_adapter import AbstractSQLAdapter
+from .redis_adapter import AbstractRedisAdapter
 
-__all__ = ['SQLAdapter']
+__all__ = ["AbstractSQLAdapter", "AbstractRedisAdapter"]

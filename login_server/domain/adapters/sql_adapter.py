@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-class SQLAdapter(ABC):
+
+class AbstractSQLAdapter(ABC):
     """
     Abstract interface for a SQL engine adapter.
     Provides methods to open a connection and ensure schema.
@@ -21,4 +22,3 @@ class SQLAdapter(ABC):
         Execute any DDL required to initialize the schema.
         """
         ...
-

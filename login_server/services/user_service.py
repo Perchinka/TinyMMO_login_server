@@ -1,48 +1,81 @@
+import secrets
 import logging
-from typing import Optional
-from login_server.crypto import ChallengeManager, CryptoUtils
-from login_server.domain.repositories import UserRepository
+from login_server.bootstrap import Bootstrap
+import hmac
+import hashlib
 
-class UserService:
+
+class CryptoUtils:
+    # Temporary solution
     """
-    Business logic for user registration and authentication.
+    Provides static methods for password hashing and challenge encryption.
     """
 
-    def __init__(
-        self,
-        user_repo: UserRepository,
-        challenge_mgr: ChallengeManager,
-        crypto: CryptoUtils,
-    ):
-        self.user_repo = user_repo
-        self.challenge_mgr = challenge_mgr
-        self.crypto = crypto
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """
+        Hash `password` using SHA-256 and return the hex digest.
+        """
+        pw_bytes = password.encode("utf-8")
+        digest = hashlib.sha256(pw_bytes).hexdigest()
+        return digest
 
-    def register(self, username: str, password: str) -> bool:
-        if not self.user_repo.is_available(username):
-            logging.warning(f"Registration failed: '{username}' taken.")
-            return False
-        pwd_hash = self.crypto.hash_password(password)
-        self.user_repo.add(username, pwd_hash)
-        logging.info(f"Registered '{username}'.")
-        return True
+    @staticmethod
+    def encrypt_challenge(challenge: str, key: str) -> str:
+        """
+        HMAC-SHA256 'encrypt' the `challenge` string using `key` (hex password hash).
+        Returns the hex digest of the HMAC.
+        """
+        # key is hex string; convert to bytes
+        key_bytes = bytes.fromhex(key)
+        msg = challenge.encode("utf-8")
+        mac = hmac.new(key_bytes, msg, digestmod=hashlib.sha256)
+        return mac.hexdigest()
 
-    def generate_challenge(self, username: str) -> Optional[str]:
-        stored = self.user_repo.get_password_hash(username)
-        if stored is None:
-            logging.error(f"No such user '{username}' for challenge.")
-            return None
-        return self.challenge_mgr.generate_challenge(username)
+    @staticmethod
+    def compare_encrypted(a: str, b: str) -> bool:
+        """
+        Constant-time comparison of two hex digests.
+        """
+        # compare_digest works on bytes or str
+        return hmac.compare_digest(a, b)
 
-    def authenticate(self, username: str, client_response: str) -> bool:
-        stored = self.user_repo.get_password_hash(username)
-        if stored is None:
-            logging.error(f"Auth failed: user '{username}' not found.")
-            return False
-        srv_chal = self.challenge_mgr.get_challenge(username)
-        expected = self.crypto.encrypt_challenge(srv_chal, stored)
-        if not self.crypto.compare_encrypted(client_response, expected):
-            logging.error(f"Auth failed: bad response for '{username}'.")
-            return False
-        logging.info(f"Authentication successful for '{username}'.")
-        return True
+
+class RegisterUserService:
+    def __call__(self, username: str, password: str) -> bool:
+        with Bootstrap.bootstraped.uow() as uow:
+            if not uow.users.is_available(username):
+                logging.warning(f"Registration failed: '{username}' taken.")
+                return False
+            passwd_hash = CryptoUtils.hash_password(password)
+            uow.users.add(username, passwd_hash)
+            logging.info(f"Registered '{username}'.")
+            return True
+
+
+class GenerateChallengeService:
+    def __call__(self, username: str) -> str | None:
+        with Bootstrap.bootstraped.uow() as uow:
+            stored = uow.users.get_password_hash(username)
+            if stored is None:
+                logging.error(f"No such user '{username}' for challenge.")
+                return None
+            challenge = secrets.token_hex(32)
+            uow.challenge_store.store(username, challenge)
+            return challenge
+
+
+class AuthenticateUserService:
+    def __call__(self, username: str, client_response: str) -> bool:
+        with Bootstrap.bootstraped.uow() as uow:
+            stored = uow.users.get_password_hash(username)
+            if stored is None:
+                logging.error(f"Auth failed: user '{username}' not found.")
+                return False
+            original = uow.challenge_store.retrieve(username)
+            expected = CryptoUtils.encrypt_challenge(original, stored)
+            if not CryptoUtils.compare_encrypted(client_response, expected):
+                logging.error(f"Auth failed: bad response for '{username}'.")
+                return False
+            logging.info(f"Authentication successful for '{username}'.")
+            return True

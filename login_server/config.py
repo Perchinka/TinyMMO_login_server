@@ -1,5 +1,7 @@
 import os
 
+from login_server.common.logging import setup_logger
+
 
 class Config:
     """
@@ -29,3 +31,8 @@ class Config:
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO")
+
+    def __init__(self) -> None:
+        setup_logger(self.LOGGING_LEVEL)

@@ -1,8 +1,9 @@
 import psycopg2
 from typing import Any
-from login_server.domain.adapters import SQLAdapter
+from login_server.domain.adapters import AbstractSQLAdapter
 
-class PostgreSQLAdapter(SQLAdapter):
+
+class PostgreSQLAdapter(AbstractSQLAdapter):
     """
     SQLAdapter for PostgreSQL.
     """
@@ -17,10 +18,11 @@ class PostgreSQLAdapter(SQLAdapter):
 
     def ensure_schema(self, connection: Any) -> None:
         with connection.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 CREATE TABLE IF NOT EXISTS users (
                     username VARCHAR PRIMARY KEY,
                     password_hash VARCHAR NOT NULL
                 );
-            """)
-
+            """
+            )

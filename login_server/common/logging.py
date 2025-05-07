@@ -13,5 +13,4 @@ def setup_logger(log_level: str):
         format="%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s",
         datefmt="%Y-%m-%d:%H:%M:%S",
         level=log_level,
-        filename="kandy_kafka.log",
     )
