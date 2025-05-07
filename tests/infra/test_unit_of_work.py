@@ -1,44 +1,50 @@
 import pytest
 from login_server.infra.unit_of_work import UnitOfWork
-from login_server.infra.repositories.user_sql_repository import SQLUserRepository
 
 
-def test_uow_exposes_users_and_conn(adapter_mock):
-    with UnitOfWork(adapter_mock) as uow:
-        # .conn comes from adapter.connect()
-        assert uow.conn is adapter_mock.connect.return_value
-        # .users is bound to that same connection
-        assert isinstance(uow.users, SQLUserRepository)
-        # adapter.connect() and ensure_schema() were called
-        adapter_mock.connect.assert_called_once()
-        adapter_mock.ensure_schema.assert_called_once_with(uow.conn)
+def test_uow_exposes_users_and_challenges(adapter_mock):
+    # adapter_mock is used for both SQL and Redis here
+    uow = UnitOfWork(
+        sql_adapter=adapter_mock,
+        redis_adapter=adapter_mock,
+        user_repo=lambda conn: "USERS",
+        challenge_store=lambda client: "CHALLENGES",
+    )
+
+    with uow as w:
+        # .connect() should have been called twice: once for SQL, once for Redis
+        assert adapter_mock.connect.call_count == 2
+        adapter_mock.ensure_schema.assert_called_once_with(w.conn)
+
+        assert w.conn is adapter_mock.connect.return_value
+        assert w.users == "USERS"
+        assert w.challenges == "CHALLENGES"
 
 
-def test_uow_commits_and_closes_on_success(adapter_mock):
-    uow = UnitOfWork(adapter_mock)
+def test_uow_commit_and_close(adapter_mock):
+    uow = UnitOfWork(
+        sql_adapter=adapter_mock,
+        redis_adapter=adapter_mock,
+        user_repo=lambda c: None,
+        challenge_store=lambda c: None,
+    )
     with uow:
         pass
-    # After a successful block, commit then close
     conn = uow.conn
     conn.commit.assert_called_once()
     conn.close.assert_called_once()
 
 
-def test_uow_rolls_back_and_closes_on_error(adapter_mock):
-    uow = UnitOfWork(adapter_mock)
+def test_uow_rollback_on_error(adapter_mock):
+    uow = UnitOfWork(
+        sql_adapter=adapter_mock,
+        redis_adapter=adapter_mock,
+        user_repo=lambda c: None,
+        challenge_store=lambda c: None,
+    )
     with pytest.raises(RuntimeError):
         with uow:
             raise RuntimeError("boom")
-    # On exception, rollback then close
     conn = uow.conn
     conn.rollback.assert_called_once()
     conn.close.assert_called_once()
-
-
-def test_ensure_schema_called_before_repo_binding(adapter_mock):
-    # Even if repo not used, ensure_schema should still be invoked
-    with UnitOfWork(adapter_mock):
-        pass
-    adapter_mock.ensure_schema.assert_called_once_with(
-        adapter_mock.connect.return_value
-    )
