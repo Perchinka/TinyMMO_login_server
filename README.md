@@ -88,17 +88,6 @@ To ensure deterministic results, randomness is mocked in all tests.
   Connect to `ws://host/auth/login`
   Exchange challenge and response following the protocol (see diagrams in `docs/api.md`)
 
----
-
-## 🤝 Contributing
-
-Contributions, bug reports, and ideas are welcome!
-
-### Guidelines
-
-* Use [conventional commits](https://www.conventionalcommits.org/)
-* Write unit tests for new features
-* Follow [reST docstring style](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)
 
 ---
 
