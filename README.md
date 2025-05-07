@@ -104,5 +104,5 @@ Contributions, bug reports, and ideas are welcome!
 
 ## 📄 License
 
-MIT License
-© 2025 [Your Name](mailto:you@example.com)
+[MIT License](./LICENSE)
+© 2025 [Alex Lukin](mailto:aleksei.v.lukin@gmail.com)
