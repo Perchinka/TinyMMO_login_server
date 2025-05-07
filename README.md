@@ -79,7 +79,7 @@ To ensure deterministic results, randomness is mocked in all tests.
 
 ---
 
-## 🛠️ Usage
+## Usage
 
 * **Register:**
   `POST /register` with `{ "username": "user", "password": "plain" }`
