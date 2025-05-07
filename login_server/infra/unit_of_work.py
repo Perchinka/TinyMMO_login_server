@@ -10,7 +10,6 @@ from login_server.domain.repositories import (
     AbstractUserRepository,
     AbstractChallengeStorage,
 )
-from .repositories import SQLUserRepository, RedisChallengeStorage
 
 
 class UnitOfWork(AbstractContextManager["UnitOfWork"]):
@@ -44,7 +43,7 @@ class UnitOfWork(AbstractContextManager["UnitOfWork"]):
 
         # Redis
         self.redis_client = self.redis_adapter.connect()
-        self.challenge_store = self.challenge_store(self.redis_client)
+        self.challenges = self.challenge_store(self.redis_client)
 
         return self
 
