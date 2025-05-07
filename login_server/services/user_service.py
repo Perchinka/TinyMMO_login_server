@@ -61,7 +61,7 @@ class GenerateChallengeService:
                 logging.error(f"No such user '{username}' for challenge.")
                 return None
             challenge = secrets.token_hex(32)
-            uow.challenge_store.store(username, challenge)
+            uow.challenges.store(username, challenge)
             return challenge
 
 
@@ -72,7 +72,7 @@ class AuthenticateUserService:
             if stored is None:
                 logging.error(f"Auth failed: user '{username}' not found.")
                 return False
-            original = uow.challenge_store.retrieve(username)
+            original = uow.challenges.retrieve(username)
             expected = CryptoUtils.encrypt_challenge(original, stored)
             if not CryptoUtils.compare_encrypted(client_response, expected):
                 logging.error(f"Auth failed: bad response for '{username}'.")
