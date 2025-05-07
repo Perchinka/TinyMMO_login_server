@@ -1,101 +1,124 @@
-# Task: Implement Secure Login Challenge-Response System
+# TinyMMO Login Server
 
-## Summary
+>Secure login and registration service for the TinyMMO game using a challenge-response protocol.
+> Built with **FastAPI**, **PostgreSQL** and **Redis**.
 
-Implement the first step of secure login and user registration for the `login_server` service. This ensures that users are authenticated and registered without ever sending their password over the network. It uses a challenge-response method with encryption to validate identity and store secure credentials.
+---
 
-This task also includes writing clean unit tests using Python and `pytest` to validate behavior.
+## Overview
 
-## Goals
+This service handles secure user registration and authentication without transmitting plaintext passwords.
+It uses a **challenge-response login system** that ensures credentials are never exposed over the network.
 
-* Create a module that handles login challenge.
-* Create a module that handles registration.
-* Add utilities to encrypt and compare authentication responses securely.
-* Write test cases using `pytest`.
-* Provide clear documentation and readable flow for future contributors. (Docstrings using [reST](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html) format)
+Key Features:
 
-## How It Works
+* Secure challenge-response authentication using Argon2, HKDF, and ChaCha20-Poly1305
+* REST and WebSocket login endpoints
+* PostgreSQL-backed user repository
+<!-- * Full test suite with `pytest` will be in future-->
 
-### Registration Flow
+---
 
-1. Client chooses a username and password.
-2. Client sends the username and plaintext password to the server.
-3. Server validates the username is available.
-4. Server hashes the password and stores it securely with the username.
+## Installation
 
-### Login Flow
+### Requirements
 
-1. Client connects to the server with only the username.
-2. Server responds with a random challenge (nonce) and its public key.
-3. Client generates its own random challenge.
-4. Client encrypts the server's challenge using the password hash.
-5. Client sends:
-   * Encrypted server challenge
-   * Client's own challenge
-   * Username
-6. Server retrieves the user's stored password hash.
-7. Server encrypts its original challenge using that hash and compares the result.
-8. If it matches, the server responds with an encrypted version of the client's challenge.
-9. If the client can decrypt it correctly, mutual authentication is complete.
+* Docker
+* Make (optionally)
 
-## Diagrams
+### Clone the Repo
 
-### Registration Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Server
-
-    Client->>Server: Sends username + plaintext password
-    Server->>Server: Check if username is available
-    alt Available
-        Server->>Server: Hash password
-        Server->>Server: Store username + password hash
-        Server-->>Client: Registration success
-    else Taken
-        Server-->>Client: Registration failed (username taken)
-    end
+```bash
+git clone https://github.com/Perchinka/TinyMMO_login_server.git
+cd TinyMMO_login_server
 ```
 
-### Login Flow
+### Local Installation (with Poetry)
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Server
-
-    Client->>Server: Sends username
-    Server->>Client: Sends server challenge
-    Client->>Client: Generates client challenge
-    Client->>Client: Encrypts server challenge using password hash
-    Client->>Server: Sends encrypted server challenge, client challenge
-    Server->>Server: Retrieves stored password hash
-    Server->>Server: Encrypts challenge using stored hash
-    Server->>Server: Compare with received encrypted challenge
-    alt Match
-        Server->>Client: Encrypts and sends client challenge back
-    else Mismatch
-        Server-->>Client: Authentication failed
-    end
-    Client->>Client: Decrypts challenge
-    alt Match
-        Client-->>Server: Authentication success
-    else Mismatch
-        Client-->>Server: Authentication failed
-    end
+```bash
+poetry install
+cp .env-example .env
 ```
 
-## Tests
+### Docker Setup (Recommended)
 
-Use `pytest`. Ensure the following:
+```bash
+make run  # or manually:
+docker-compose up --build
+```
 
-* Each module is tested in isolation.
-* Add positive and negative cases (correct and incorrect logins/registrations).
-* Mock randomness where needed for predictable tests.
+---
 
-## Notes
+## 📂 Project Structure
 
-* Do not use plain-text passwords anywhere beyond initial transmission for registration.
-* Use standard libraries where possible.
-* Tests must not rely on live randomness — mock or patch for determinism.
+```
+login_server/
+🔹 api/                  # FastAPI routes, schemas, WebSocket handlers
+🔹 common/               # Shared utilities (logging, exceptions)
+🔹 config.py             # App configuration from environment
+🔹 domain/               # Core interfaces and domain models
+🔹 infra/                # Implementations for abstract adapters and repositories
+🔹 services/             # Business logic for registration and login
+🔹 bootstrap.py          # App wiring
+🔹 app.py                # FastAPI app factory
+```
+
+Test coverage lives in the `tests/` directory, with mirroring submodules.
+
+Documentation and architecture references are in `docs/`.
+
+---
+
+## Running Tests
+
+```bash
+make test
+```
+
+To ensure deterministic results, randomness is mocked in all tests.
+
+---
+
+## 🛠️ Usage
+
+* **Register:**
+  `POST /register` with `{ "username": "user", "password": "plain" }`
+
+* **WebSocket Login:**
+  Connect to `ws://host/auth/login`
+  Exchange challenge and response following the protocol (see diagrams in `docs/api.md`)
+
+---
+
+## 🤝 Contributing
+
+Contributions, bug reports, and ideas are welcome!
+
+### Guidelines
+
+* Use [conventional commits](https://www.conventionalcommits.org/)
+* Write unit tests for new features
+* Follow [reST docstring style](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)
+* Format code with `black` and `isort` (optionally)
+
+### Run tests:
+
+```bash
+poetry run pytest
+```
+
+---
+
+## 📄 License
+
+MIT License
+© 2025 [Your Name](mailto:you@example.com)
+
+---
+
+## 🙌 Acknowledgements
+
+* [FastAPI](https://fastapi.tiangolo.com/)
+* [Argon2-cffi](https://github.com/hynek/argon2-cffi)
+* [cryptography](https://cryptography.io/)
+* [pytest](https://pytest.org/)
