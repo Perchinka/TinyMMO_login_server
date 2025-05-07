@@ -53,14 +53,14 @@ docker-compose up --build
 
 ```
 login_server/
-🔹 api/                  # FastAPI routes, schemas, WebSocket handlers
-🔹 common/               # Shared utilities (logging, exceptions)
-🔹 config.py             # App configuration from environment
-🔹 domain/               # Core interfaces and domain models
-🔹 infra/                # Implementations for abstract adapters and repositories
-🔹 services/             # Business logic for registration and login
-🔹 bootstrap.py          # App wiring
-🔹 app.py                # FastAPI app factory
+- api/                  # FastAPI routes, schemas, WebSocket handlers
+- common/               # Shared utilities (logging, exceptions)
+- config.py             # App configuration from environment
+- domain/               # Core interfaces and domain models
+- infra/                # Implementations for abstract adapters and repositories
+- services/             # Business logic for registration and login
+- bootstrap.py          # App wiring
+- app.py                # FastAPI app factory
 ```
 
 Test coverage lives in the `tests/` directory, with mirroring submodules.
