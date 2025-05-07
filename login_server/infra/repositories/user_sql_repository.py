@@ -1,9 +1,9 @@
 from typing import Optional
 from psycopg2.extensions import connection as _Connection
-from login_server.domain.repositories import UserRepository
+from login_server.domain.repositories import AbstractUserRepository
 
 
-class SQLUserRepository(UserRepository):
+class SQLUserRepository(AbstractUserRepository):
     """
     psycopg2 implementation of UserRepository.
     """

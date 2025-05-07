@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from login_server.config import Config
 
 from .domain.adapters import AbstractSQLAdapter, AbstractRedisAdapter
+from .domain.repositories import AbstractChallengeStorage, AbstractUserRepository
+
 from .infra.adapters import PostgreSQLAdapter, RedisAdapter
+from .infra.repositories import RedisChallengeStorage, SQLUserRepository
 from .infra import UnitOfWork
 
 
@@ -31,7 +34,10 @@ class Bootstrap:
 
         logging.info("ATTEMPTING TO BOOTSTRAP - wiring UoW")
         uow_factory = lambda: UnitOfWork(
-            sql_adapter=sql_adapter, redis_adapter=redis_adapter
+            sql_adapter=sql_adapter,
+            redis_adapter=redis_adapter,
+            user_repo=SQLUserRepository,
+            challenge_store=RedisChallengeStorage,
         )
 
         Bootstrap.bootstraped = Bootstraped(config=config, uow=uow_factory)

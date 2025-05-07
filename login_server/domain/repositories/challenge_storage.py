@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
-class ChallengeStorage(ABC):
+class AbstractChallengeStorage(ABC):
     """High-level interface for storing/retrieving one-time challenges."""
 
     @abstractmethod

@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Any
 
-class UserRepository(ABC):
+
+class AbstractUserRepository(ABC):
     """
     Domain-level interface for user persistence.
     """
+
+    @abstractmethod
+    def __init__(self, conn: Any) -> None:
+        super().__init__()
 
     @abstractmethod
     def is_available(self, username: str) -> bool:
@@ -20,4 +25,3 @@ class UserRepository(ABC):
     def get_password_hash(self, username: str) -> Optional[str]:
         """Return stored password_hash or None."""
         ...
-

@@ -1,4 +1,4 @@
-from .user_repository import UserRepository
-from .challenge_storage import ChallengeStorage
+from .user_repository import AbstractUserRepository
+from .challenge_storage import AbstractChallengeStorage
 
-__all__ = ["UserRepository", "ChallengeStorage"]
+__all__ = ["AbstractUserRepository", "AbstractChallengeStorage"]

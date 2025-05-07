@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from login_server.domain.adapters import AbstractSQLAdapter
 from login_server.infra.repositories import SQLUserRepository
-from login_server.domain.repositories import UserRepository
+from login_server.domain.repositories import AbstractUserRepository
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def user_sql_repo(connection_mock):
     return SQLUserRepository(connection_mock)
 
 
-class DummyRepo(UserRepository):
+class DummyRepo(AbstractUserRepository):
     def __init__(self):
         self._store = {}
 
