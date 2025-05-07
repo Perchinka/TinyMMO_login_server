@@ -7,7 +7,11 @@ from .domain.adapters import AbstractSQLAdapter, AbstractRedisAdapter
 from .domain.repositories import AbstractChallengeStorage, AbstractUserRepository
 
 from .infra.adapters import PostgreSQLAdapter, RedisAdapter
-from .infra.repositories import RedisChallengeStorage, SQLUserRepository
+from .infra.repositories import (
+    RedisChallengeStorage,
+    SQLUserRepository,
+    LocalChallengeStorage,
+)
 from .infra import UnitOfWork
 
 
@@ -37,7 +41,7 @@ class Bootstrap:
             sql_adapter=sql_adapter,
             redis_adapter=redis_adapter,
             user_repo=SQLUserRepository,
-            challenge_store=RedisChallengeStorage,
+            challenge_store=LocalChallengeStorage,
         )
 
         Bootstrap.bootstraped = Bootstraped(config=config, uow=uow_factory)
