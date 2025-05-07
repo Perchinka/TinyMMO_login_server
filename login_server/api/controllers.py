@@ -29,10 +29,10 @@ def register(req: RegisterRequest, service=Depends(RegisterUserService)):
 
 @router.post("/auth/challenge", response_model=ChallengeResponse)
 def issue_challenge(req: ChallengeRequest, service=Depends(GenerateChallengeService)):
-    chal = service(req.username)
-    if chal is None:
+    result = service(req.username)
+    if result is None:
         raise HTTPException(404, "User not found")
-    return ChallengeResponse(challenge=chal)
+    return ChallengeResponse(**result)
 
 
 @router.post("/auth/login", response_model=AuthResponse)

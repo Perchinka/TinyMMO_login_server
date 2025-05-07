@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from login_server.config import Config
 
 from .domain.adapters import AbstractSQLAdapter, AbstractRedisAdapter
-from .domain.repositories import AbstractChallengeStorage, AbstractUserRepository
 
 from .infra.adapters import PostgreSQLAdapter, RedisAdapter
 from .infra.repositories import (

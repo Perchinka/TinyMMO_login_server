@@ -1,0 +1,115 @@
+classDiagram
+  class AbstractChallengeStorage {
+    retrieve(username: str)* str
+    store(username: str, challenge: str)* None
+  }
+  class AbstractRedisAdapter {
+    connect()* Any
+  }
+  class AbstractSQLAdapter {
+    connect()* Any
+    ensure_schema(connection: Any)* None
+  }
+  class AbstractUserRepository {
+    add(username: str, password_hash: str)* None
+    get_password_hash(username: str)* Optional[str]
+    is_available(username: str)* bool
+  }
+  class AuthRequest {
+    encrypted_challenge : str
+    username : str
+  }
+  class AuthResponse {
+    success : bool
+  }
+  class AuthenticateUserService {
+  }
+  class Bootstrap {
+    bootstraped
+  }
+  class Bootstraped {
+    config
+    uow : Callable[..., UnitOfWork]
+  }
+  class ChallengeRequest {
+    username : str
+  }
+  class ChallengeResponse {
+    challenge : str
+  }
+  class Config {
+    DATABASE_URL
+    DB_HOST : str
+    DB_NAME : str
+    DB_PASSWORD : str
+    DB_PORT : int
+    DB_USER : str
+    LOGGING_LEVEL : NoneType
+    REDIS_URL : str
+  }
+  class CryptoUtils {
+    compare_encrypted(a: str, b: str) bool
+    encrypt_challenge(challenge: str, key: str) str
+    hash_password(password: str) str
+  }
+  class GenerateChallengeService {
+  }
+  class LocalChallengeStorage {
+    storage : dict
+    ttl : int
+    retrieve(username: str) str
+    store(username: str, challenge: str) None
+  }
+  class PostgreSQLAdapter {
+    dsn : str
+    connect() Any
+    ensure_schema(connection: Any) None
+  }
+  class RedisAdapter {
+    url
+    connect() Any
+  }
+  class RedisChallengeStorage {
+    client : Redis
+    ttl : int
+    retrieve(username: str) str
+    store(username: str, challenge: str) None
+  }
+  class RegisterRequest {
+    password : str
+    username : str
+  }
+  class RegisterResponse {
+    success : bool
+  }
+  class RegisterUserService {
+  }
+  class SQLUserRepository {
+    conn
+    add(username: str, password_hash: str) None
+    get_password_hash(username: str) Optional[str]
+    is_available(username: str) bool
+  }
+  class UnitOfWork {
+    challenge_store : Type[AbstractChallengeStorage]
+    challenges
+    conn
+    redis_adapter
+    redis_client
+    sql_adapter
+    user_repo : Type[AbstractUserRepository]
+    users
+  }
+  class User {
+    password_hash : str
+    username : str
+  }
+  PostgreSQLAdapter --|> AbstractSQLAdapter
+  RedisAdapter --|> AbstractRedisAdapter
+  LocalChallengeStorage --|> AbstractChallengeStorage
+  RedisChallengeStorage --|> AbstractChallengeStorage
+  SQLUserRepository --|> AbstractUserRepository
+  Bootstraped --* Bootstrap : bootstraped
+  Config --* Bootstraped : config
+  AbstractRedisAdapter --o UnitOfWork : redis_adapter
+  AbstractSQLAdapter --o UnitOfWork : sql_adapter

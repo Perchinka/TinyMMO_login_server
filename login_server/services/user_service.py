@@ -1,81 +1,77 @@
-import secrets
-import logging
+import os
 from login_server.bootstrap import Bootstrap
-import hmac
-import hashlib
-
-
-class CryptoUtils:
-    # Temporary solution
-    """
-    Provides static methods for password hashing and challenge encryption.
-    """
-
-    @staticmethod
-    def hash_password(password: str) -> str:
-        """
-        Hash `password` using SHA-256 and return the hex digest.
-        """
-        pw_bytes = password.encode("utf-8")
-        digest = hashlib.sha256(pw_bytes).hexdigest()
-        return digest
-
-    @staticmethod
-    def encrypt_challenge(challenge: str, key: str) -> str:
-        """
-        HMAC-SHA256 'encrypt' the `challenge` string using `key` (hex password hash).
-        Returns the hex digest of the HMAC.
-        """
-        # key is hex string; convert to bytes
-        key_bytes = bytes.fromhex(key)
-        msg = challenge.encode("utf-8")
-        mac = hmac.new(key_bytes, msg, digestmod=hashlib.sha256)
-        return mac.hexdigest()
-
-    @staticmethod
-    def compare_encrypted(a: str, b: str) -> bool:
-        """
-        Constant-time comparison of two hex digests.
-        """
-        # compare_digest works on bytes or str
-        return hmac.compare_digest(a, b)
+from login_server.infra.security import PasswordHasher
+from login_server.infra.security import ChallengeEncryptor
 
 
 class RegisterUserService:
+    def __init__(self):
+        self._hasher = PasswordHasher()
+
     def __call__(self, username: str, password: str) -> bool:
         with Bootstrap.bootstraped.uow() as uow:
             if not uow.users.is_available(username):
-                logging.warning(f"Registration failed: '{username}' taken.")
                 return False
-            passwd_hash = CryptoUtils.hash_password(password)
-            uow.users.add(username, passwd_hash)
-            logging.info(f"Registered '{username}'.")
+            pw_hash = self._hasher.hash(password)
+            uow.users.add(username, pw_hash)
             return True
 
 
 class GenerateChallengeService:
-    def __call__(self, username: str) -> str | None:
+    def __init__(self):
+        self._encryptor = ChallengeEncryptor()
+
+    def __call__(self, username: str) -> dict | None:
         with Bootstrap.bootstraped.uow() as uow:
-            stored = uow.users.get_password_hash(username)
-            if stored is None:
-                logging.error(f"No such user '{username}' for challenge.")
+            pw_hash = uow.users.get_password_hash(username)
+            if pw_hash is None:
                 return None
-            challenge = secrets.token_hex(32)
-            uow.challenges.store(username, challenge)
-            return challenge
+
+            # generate server nonce and salt
+            server_nonce = os.urandom(32).hex()
+            salt = os.urandom(16)
+            key = self._encryptor.derive_key(pw_hash, salt)
+
+            # store plaintext nonce (so we can verify client later)
+            uow.challenges.store(username, server_nonce)
+
+            return {
+                "nonce": server_nonce,
+                "salt": salt.hex(),
+            }
 
 
 class AuthenticateUserService:
-    def __call__(self, username: str, client_response: str) -> bool:
+    def __init__(self):
+        self._encryptor = ChallengeEncryptor()
+
+    def __call__(
+        self,
+        username: str,
+        client_nonce_hex: str,
+        client_cipher_hex: str,
+        salt_hex: str,
+    ) -> bool:
         with Bootstrap.bootstraped.uow() as uow:
-            stored = uow.users.get_password_hash(username)
-            if stored is None:
-                logging.error(f"Auth failed: user '{username}' not found.")
+            pw_hash = uow.users.get_password_hash(username)
+            if pw_hash is None:
                 return False
-            original = uow.challenges.retrieve(username)
-            expected = CryptoUtils.encrypt_challenge(original, stored)
-            if not CryptoUtils.compare_encrypted(client_response, expected):
-                logging.error(f"Auth failed: bad response for '{username}'.")
+
+            # reconstruct key
+            salt = bytes.fromhex(salt_hex)
+            key = self._encryptor.derive_key(pw_hash, salt)
+
+            # decrypt client’s response to see if they saw our server_nonce
+            client_nonce = bytes.fromhex(client_nonce_hex)
+            client_cipher = bytes.fromhex(client_cipher_hex)
+            try:
+                server_nonce = self._encryptor.decrypt(client_nonce, client_cipher, key)
+            except Exception:
                 return False
-            logging.info(f"Authentication successful for '{username}'.")
+
+            stored = uow.challenges.retrieve(username)
+            if server_nonce != stored:
+                return False
+
+            # (Optionally: now encrypt the client's own challenge back)
             return True
