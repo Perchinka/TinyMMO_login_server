@@ -1,7 +1,7 @@
 import os
 from login_server.bootstrap import Bootstrap
-from login_server.infra.security import PasswordHasher
-from login_server.infra.security import ChallengeEncryptor
+from login_server.infra.security import PasswordHasher, ChallengeEncryptor
+from login_server.common.exceptions import ChallengeNotFoundError
 
 
 class RegisterUserService:
@@ -27,9 +27,11 @@ class GenerateChallengeService:
             pw_hash = uow.users.get_password_hash(username)
             if pw_hash is None:
                 return None
+
             server_nonce = os.urandom(32).hex()
             salt = os.urandom(16)
             key = self._encrypt.derive_key(pw_hash, salt)
+
             uow.challenges.store(username, server_nonce)
             return {
                 "nonce": server_nonce,
@@ -62,5 +64,9 @@ class AuthenticateUserService:
             except Exception:
                 return False
 
-            original = uow.challenges.retrieve(username)
+            try:
+                original = uow.challenges.retrieve(username)
+            except ChallengeNotFoundError:
+                return False
+
             return decrypted == original
