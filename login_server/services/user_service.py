@@ -19,22 +19,18 @@ class RegisterUserService:
 
 class GenerateChallengeService:
     def __init__(self):
-        self._encryptor = ChallengeEncryptor()
+        self._hasher = PasswordHasher()
+        self._encrypt = ChallengeEncryptor()
 
-    def __call__(self, username: str) -> dict | None:
+    def __call__(self, username: str) -> dict[str, str] | None:
         with Bootstrap.bootstraped.uow() as uow:
             pw_hash = uow.users.get_password_hash(username)
             if pw_hash is None:
                 return None
-
-            # generate server nonce and salt
             server_nonce = os.urandom(32).hex()
             salt = os.urandom(16)
-            key = self._encryptor.derive_key(pw_hash, salt)
-
-            # store plaintext nonce (so we can verify client later)
+            key = self._encrypt.derive_key(pw_hash, salt)
             uow.challenges.store(username, server_nonce)
-
             return {
                 "nonce": server_nonce,
                 "salt": salt.hex(),
@@ -43,13 +39,13 @@ class GenerateChallengeService:
 
 class AuthenticateUserService:
     def __init__(self):
-        self._encryptor = ChallengeEncryptor()
+        self._encrypt = ChallengeEncryptor()
 
     def __call__(
         self,
         username: str,
         client_nonce_hex: str,
-        client_cipher_hex: str,
+        ciphertext_hex: str,
         salt_hex: str,
     ) -> bool:
         with Bootstrap.bootstraped.uow() as uow:
@@ -57,21 +53,14 @@ class AuthenticateUserService:
             if pw_hash is None:
                 return False
 
-            # reconstruct key
-            salt = bytes.fromhex(salt_hex)
-            key = self._encryptor.derive_key(pw_hash, salt)
-
-            # decrypt client’s response to see if they saw our server_nonce
+            key = self._encrypt.derive_key(pw_hash, bytes.fromhex(salt_hex))
             client_nonce = bytes.fromhex(client_nonce_hex)
-            client_cipher = bytes.fromhex(client_cipher_hex)
+            ciphertext = bytes.fromhex(ciphertext_hex)
+
             try:
-                server_nonce = self._encryptor.decrypt(client_nonce, client_cipher, key)
+                decrypted = self._encrypt.decrypt(client_nonce, ciphertext, key)
             except Exception:
                 return False
 
-            stored = uow.challenges.retrieve(username)
-            if server_nonce != stored:
-                return False
-
-            # (Optionally: now encrypt the client's own challenge back)
-            return True
+            original = uow.challenges.retrieve(username)
+            return decrypted == original
