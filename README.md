@@ -99,13 +99,6 @@ Contributions, bug reports, and ideas are welcome!
 * Use [conventional commits](https://www.conventionalcommits.org/)
 * Write unit tests for new features
 * Follow [reST docstring style](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)
-* Format code with `black` and `isort` (optionally)
-
-### Run tests:
-
-```bash
-poetry run pytest
-```
 
 ---
 
@@ -113,12 +106,3 @@ poetry run pytest
 
 MIT License
 © 2025 [Your Name](mailto:you@example.com)
-
----
-
-## 🙌 Acknowledgements
-
-* [FastAPI](https://fastapi.tiangolo.com/)
-* [Argon2-cffi](https://github.com/hynek/argon2-cffi)
-* [cryptography](https://cryptography.io/)
-* [pytest](https://pytest.org/)
