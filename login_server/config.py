@@ -4,6 +4,7 @@ from login_server.common.logging import setup_logger
 
 
 class Config:
+    # TODO put in __init__ so it wouldn't load on import
     """
     Application configuration, loaded from environment variables.
 

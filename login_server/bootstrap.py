@@ -26,7 +26,6 @@ class Bootstrap:
     bootstraped: Bootstraped
 
     def __call__(self, *args: Any, **kwds: Any) -> Bootstraped:
-        logging.info("ATTEMPTING TO BOOTSTRAP - initializing config")
         config = Config()
 
         logging.info("ATTEMPTING TO BOOTSTRAP - creating posgres adapter")
