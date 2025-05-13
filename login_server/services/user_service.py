@@ -73,5 +73,3 @@ class AuthenticateUserService:
 
             if decrypted != original:
                 raise AuthenticationError("Response does not match challenge")
-
-            return True
