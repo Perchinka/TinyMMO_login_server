@@ -1,20 +1,23 @@
 import os
 from login_server.bootstrap import Bootstrap
 from login_server.infra.security import PasswordHasher, ChallengeEncryptor
-from login_server.common.exceptions import ChallengeNotFoundError
+from login_server.common.exceptions import (
+    AuthenticationError,
+    ChallengeNotFoundError,
+    UserAlreadyExistsError,
+)
 
 
 class RegisterUserService:
     def __init__(self):
         self._hasher = PasswordHasher()
 
-    def __call__(self, username: str, password: str) -> bool:
+    def __call__(self, username: str, password: str) -> None:
         with Bootstrap.bootstraped.uow() as uow:
-            if not uow.users.is_available(username):
-                return False
             pw_hash = self._hasher.hash(password)
+            if not uow.users.is_available(username):
+                raise UserAlreadyExistsError
             uow.users.add(username, pw_hash)
-            return True
 
 
 class GenerateChallengeService:
@@ -30,7 +33,6 @@ class GenerateChallengeService:
 
             server_nonce = os.urandom(32).hex()
             salt = os.urandom(16)
-            key = self._encrypt.derive_key(pw_hash, salt)
 
             uow.challenges.store(username, server_nonce)
             return {
@@ -49,11 +51,11 @@ class AuthenticateUserService:
         client_nonce_hex: str,
         ciphertext_hex: str,
         salt_hex: str,
-    ) -> bool:
+    ) -> None:
         with Bootstrap.bootstraped.uow() as uow:
             pw_hash = uow.users.get_password_hash(username)
             if pw_hash is None:
-                return False
+                raise AuthenticationError("Invalid username or credentials")
 
             key = self._encrypt.derive_key(pw_hash, bytes.fromhex(salt_hex))
             client_nonce = bytes.fromhex(client_nonce_hex)
@@ -62,11 +64,14 @@ class AuthenticateUserService:
             try:
                 decrypted = self._encrypt.decrypt(client_nonce, ciphertext, key)
             except Exception:
-                return False
+                raise AuthenticationError("Decryption failed or invalid credentials")
 
             try:
                 original = uow.challenges.retrieve(username)
             except ChallengeNotFoundError:
-                return False
+                raise AuthenticationError("Challenge expired or not found")
 
-            return decrypted == original
+            if decrypted != original:
+                raise AuthenticationError("Response does not match challenge")
+
+            return True

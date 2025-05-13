@@ -1,5 +1,9 @@
 from typing import Optional
+
+from psycopg2 import IntegrityError
 from psycopg2.extensions import connection as _Connection
+
+from login_server.common.exceptions import UserAlreadyExistsError
 from login_server.domain.repositories import AbstractUserRepository
 
 
@@ -17,12 +21,16 @@ class SQLUserRepository(AbstractUserRepository):
             return cur.fetchone() is None
 
     def add(self, username: str, password_hash: str) -> None:
-        # TODO rewrite using custom exceptions
         with self.conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO users (username, password_hash) VALUES (%s, %s);",
-                (username, password_hash),
-            )
+            try:
+                cur.execute(
+                    "INSERT INTO users (username, password_hash) VALUES (%s, %s);",
+                    (username, password_hash),
+                )
+            except IntegrityError as e:
+                raise UserAlreadyExistsError(
+                    f"Username '{username}' is already taken"
+                ) from e
 
     def get_password_hash(self, username: str) -> Optional[str]:
         with self.conn.cursor() as cur:

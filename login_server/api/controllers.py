@@ -3,6 +3,7 @@ from login_server.api.schemas import (
     RegisterRequest,
     RegisterResponse,
 )
+from login_server.common.exceptions import UserAlreadyExistsError
 from login_server.services.user_service import (
     RegisterUserService,
 )
@@ -16,6 +17,11 @@ router = APIRouter(tags=["auth"])
     status_code=status.HTTP_201_CREATED,
 )
 def register(req: RegisterRequest, service=Depends(RegisterUserService)):
-    if not service(req.username, req.password):
-        raise HTTPException(400, "Username already taken")
+    try:
+        service(req.username, req.password)
+    except UserAlreadyExistsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
     return RegisterResponse(success=True)

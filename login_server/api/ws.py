@@ -3,6 +3,7 @@ from login_server.services.user_service import (
     GenerateChallengeService,
     AuthenticateUserService,
 )
+from login_server.common.exceptions import UserNotFoundError, AuthenticationError
 
 generate_challenge = GenerateChallengeService()
 auth_user = AuthenticateUserService()
@@ -10,12 +11,14 @@ auth_user = AuthenticateUserService()
 
 async def login_ws(websocket: WebSocket):
     await websocket.accept()
+
     try:
         init = await websocket.receive_json()
         username = init.get("username")
 
-        challenge = generate_challenge(username)
-        if challenge is None:
+        try:
+            challenge = generate_challenge(username)
+        except UserNotFoundError:
             await websocket.send_json({"type": "failure", "reason": "user not found"})
             return
 
@@ -28,13 +31,14 @@ async def login_ws(websocket: WebSocket):
             )
             return
 
-        ok = auth_user(
-            username,
-            resp["client_nonce"],
-            resp["ciphertext"],
-            resp["salt"],
-        )
-        if not ok:
+        try:
+            auth_user(
+                username,
+                resp["client_nonce"],
+                resp["ciphertext"],
+                resp["salt"],
+            )
+        except AuthenticationError:
             await websocket.send_json(
                 {"type": "failure", "reason": "authentication failed"}
             )
