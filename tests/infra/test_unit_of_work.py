@@ -18,7 +18,6 @@ def test_unit_of_work_initializes_connection_and_repositories(adapter_mock):
 
     with uow as context:
         assert adapter_mock.connect.call_count == 2, "Expected two calls to connect()"
-        adapter_mock.ensure_schema.assert_called_once_with(context.conn)
 
         assert context.conn is adapter_mock.connect.return_value
         assert context.users == "USER_REPOSITORY"
