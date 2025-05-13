@@ -38,7 +38,6 @@ class UnitOfWork(AbstractContextManager["UnitOfWork"]):
     def __enter__(self) -> "UnitOfWork":
         # SQL
         self.conn = self.sql_adapter.connect()
-        self.sql_adapter.ensure_schema(self.conn)
         self.users = self.user_repo(self.conn)
 
         # Redis

@@ -15,10 +15,3 @@ class AbstractSQLAdapter(ABC):
         The connection must start in manual‐commit mode.
         """
         ...
-
-    @abstractmethod
-    def ensure_schema(self, connection: Any) -> None:
-        """
-        Execute any DDL required to initialize the schema.
-        """
-        ...
