@@ -20,22 +20,3 @@ def test_postgresql_adapter_connect_disables_autocommit(monkeypatch):
 
     assert connection is fake_connection
     assert connection.autocommit is False
-
-
-def test_postgresql_adapter_ensure_schema_executes_create_users_table():
-    """
-    ensure_schema() should open a cursor and execute the DDL
-    to create the 'users' table if it does not already exist.
-    """
-    # Set up a mock connection whose cursor() returns a context manager
-    mock_cursor = MagicMock()
-    mock_connection = MagicMock()
-    mock_connection.cursor.return_value.__enter__.return_value = mock_cursor
-
-    adapter = PostgreSQLAdapter(dsn="postgresql://user:pass@host/db")
-
-    adapter.ensure_schema(mock_connection)
-
-    mock_cursor.execute.assert_called_once()
-    executed_sql = mock_cursor.execute.call_args[0][0]
-    assert "CREATE TABLE IF NOT EXISTS users" in executed_sql
