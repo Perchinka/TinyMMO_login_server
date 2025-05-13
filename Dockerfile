@@ -21,6 +21,7 @@ RUN poetry config virtualenvs.create false \
 COPY . /app
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 CMD ["python", "-m", "login_server"]
