@@ -1,29 +1,35 @@
-import os
+from enum import Enum
+from pydantic_settings import SettingsConfigDict, BaseSettings
 
-from login_server.common.logging import setup_logger
+
+class ChallengeBackend(str, Enum):
+    LOCAL = "local"
+    REDIS = "redis"
 
 
-class Config:
-    # TODO put in __init__ so it wouldn't load on import
+class Config(BaseSettings):
     """
-    Application configuration, loaded from environment variables.
-
-    Attributes:
-        POSTGRES_HOST (str): PostgreSQL host.
-        POSTGRES_PORT (int): PostgreSQL port.
-        POSTGRES_USER (str): PostgreSQL username.
-        POSTGRES_PASSWORD (str): PostgreSQL password.
-        POSTGRES_DB (str): PostgreSQL database name.
-
-    Properties:
-        DATABASE_URL (str): SQLAlchemy-style database URL.
+    Application settings, loaded from environment and .env,
+    with strict validation.
     """
 
-    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "localhost")
-    POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "postgres")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="forbid",
+    )
+
+    POSTGRES_HOST: str = "localhost"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "password"
+    POSTGRES_DB: str = "postgres"
+
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    CHALLENGE_BACKEND: ChallengeBackend = ChallengeBackend.LOCAL
+
+    LOGGING_LEVEL: str = "INFO"
 
     @property
     def DATABASE_URL(self) -> str:
@@ -31,9 +37,3 @@ class Config:
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
-
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO")
-
-    def __init__(self) -> None:
-        setup_logger(self.LOGGING_LEVEL)

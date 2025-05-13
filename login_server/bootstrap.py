@@ -34,16 +34,20 @@ class Bootstrap:
         logging.info("ATTEMPTING TO BOOTSTRAP - creating redis adapter")
         redis_adapter: AbstractRedisAdapter = RedisAdapter(config.REDIS_URL)
 
+        if config.CHALLENGE_BACKEND.lower() == "redis":
+            challenge_store = RedisChallengeStorage
+        else:
+            challenge_store = LocalChallengeStorage
+
         logging.info("ATTEMPTING TO BOOTSTRAP - wiring UoW")
         uow_factory = lambda: UnitOfWork(
             sql_adapter=sql_adapter,
             redis_adapter=redis_adapter,
             user_repo=SQLUserRepository,
-            challenge_store=LocalChallengeStorage,
+            challenge_store=challenge_store,
         )
 
         Bootstrap.bootstraped = Bootstraped(config=config, uow=uow_factory)
-
         logging.info("Bootstrap is complete")
 
         return Bootstrap.bootstraped

@@ -1,6 +1,7 @@
 import time
 import pytest
 from unittest.mock import MagicMock
+
 from login_server.infra.repositories.challenge_storage import (
     LocalChallengeStorage,
     RedisChallengeStorage,
@@ -80,3 +81,28 @@ def test_redis_challenge_retrieve_raises_when_none():
     with pytest.raises(ChallengeNotFoundError) as exc:
         storage.retrieve("userC")
     assert "No challenge found" in str(exc.value)
+
+
+import pytest
+from login_server.bootstrap import Bootstrap
+from login_server.infra.repositories import RedisChallengeStorage, LocalChallengeStorage
+
+
+@pytest.mark.parametrize(
+    "backend, expected_cls",
+    [
+        ("local", LocalChallengeStorage),
+        ("redis", RedisChallengeStorage),
+    ],
+)
+def test_challenge_backend_selection(monkeypatch, backend, expected_cls):
+    """
+    Based on the env value uow sould contain proper challenges backend.
+    RedisChallengeStorage or LocalChallengeStorage.
+    """
+    monkeypatch.setenv("CHALLENGE_BACKEND", backend)
+    bs = Bootstrap()()
+    uow = bs.uow()
+    assert (
+        uow.challenge_store is expected_cls
+    ), f"Expected {expected_cls.__name__} for backend={backend}"
